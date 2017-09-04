@@ -22,3 +22,5 @@ objects.json
 # Documentation artifacts
 setup_nexus3.sh
 
+# Integration tests artifacts
+cookies.txt

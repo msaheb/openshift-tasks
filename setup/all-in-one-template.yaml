@@ -1,0 +1,512 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: openshift-tasks
+message: See https://github.com/nmasse-itix/openshift-tasks for more details.
+metadata:
+  annotations:
+    description: |-
+      A demo application that exhibits the main features of OpenShift. It is written
+      in Java for JBoss EAP 7 and features a CI/CD environment with Blue/Green deployment.
+    openshift.io/display-name: OpenShift Tasks
+    tags: instant-app,jboss,jenkins
+    template.openshift.io/documentation-url: https://github.com/nmasse-itix/openshift-tasks
+    template.openshift.io/long-description: A demo using Java for JBoss EAP 7 and Jenkins, running on OpenShift
+    template.openshift.io/provider-display-name: Nicolas Massé
+    template.openshift.io/support-url: https://github.com/nmasse-itix/openshift-tasks/issues
+  name: openshift-tasks
+objects:
+##
+## The ImageStreams for all environments
+##
+
+# BUILD Environment
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      build: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${BUILD_PROJECT}
+
+# TEST Environment
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      build: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${TEST_PROJECT}
+
+# PROD Environment
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      build: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${PROD_PROJECT}
+
+##
+## Build Objects
+##
+
+# The BuildConfig that generates the target image
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: openshift-tasks
+    labels:
+      build: openshift-tasks
+      template: openshift-tasks
+    namespace: ${BUILD_PROJECT}
+  spec:
+    successfulBuildsHistoryLimit: 1
+    failedBuildsHistoryLimit: 1
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: openshift-tasks:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        uri: ${GIT_REPO}
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: ${JBOSS_EAP_IMAGE_STREAM_TAG}
+          namespace: ${JBOSS_EAP_IMAGE_STREAM_NAMESPACE}
+      type: Source
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+
+# The Jenkins Pipeline
+- kind: "BuildConfig"
+  apiVersion: "v1"
+  metadata:
+    name: "openshift-tasks-pipeline"
+    namespace: ${BUILD_PROJECT}
+    labels:
+      template: openshift-tasks
+  spec:
+    source:
+      git:
+        uri: ${GIT_REPO}
+    strategy:
+      type: "JenkinsPipeline"
+      jenkinsPipelineStrategy:
+        jenkinsfilePath: Jenkinsfile
+        env:
+          - name: OPENSHIFT_IMAGE_STREAM
+            value: openshift-tasks
+          - name: OPENSHIFT_BUILD_CONFIG
+            value: openshift-tasks
+          - name: OPENSHIFT_SERVICE
+            value: openshift-tasks
+          - name: OPENSHIFT_DEPLOYMENT_CONFIG
+            value: openshift-tasks
+          - name: OPENSHIFT_BUILD_PROJECT
+            value: ${BUILD_PROJECT}
+          - name: OPENSHIFT_TEST_ENVIRONMENT
+            value: ${TEST_PROJECT}
+          - name: OPENSHIFT_PROD_ENVIRONMENT
+            value: ${PROD_PROJECT}
+          - name: OPENSHIFT_TEST_URL
+            value: http://${TEST_ROUTE_HOSTNAME}
+
+##
+## Deploy to the TEST environment
+##
+
+# DeploymentConfig/TEST
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${TEST_PROJECT}
+  spec:
+    replicas: 1
+    selector:
+      app: openshift-tasks
+      deploymentconfig: openshift-tasks
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: openshift-tasks
+          deploymentconfig: openshift-tasks
+          template: openshift-tasks
+      spec:
+        containers:
+        - image: openshift-tasks:ready-for-testing
+          imagePullPolicy: IfNotPresent
+          name: openshift-tasks
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        containerNames:
+        - openshift-tasks
+        from:
+          kind: ImageStreamTag
+          name: openshift-tasks:ready-for-testing
+          namespace: ${TEST_PROJECT}
+
+# Service/TEST
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${TEST_PROJECT}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: openshift-tasks
+      deploymentconfig: openshift-tasks
+    sessionAffinity: None
+    type: ClusterIP
+
+# Route/TEST
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      haproxy.router.openshift.io/balance: "roundrobin"
+      haproxy.router.openshift.io/disable_cookies: "true"
+    labels:
+      app: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${TEST_PROJECT}
+  spec:
+    host: ${TEST_ROUTE_HOSTNAME}
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: openshift-tasks
+      weight: 100
+    wildcardPolicy: None
+
+##
+## RoleBinding
+##
+
+# Set RoleBinding for the test environment
+- apiVersion: v1
+  groupNames: null
+  kind: RoleBinding
+  metadata:
+    name: jenkins-is-admin
+    namespace: ${TEST_PROJECT}
+    labels:
+      template: openshift-tasks
+  roleRef:
+    name: admin
+  subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: ${BUILD_PROJECT}
+  userNames:
+  - system:serviceaccount:${BUILD_PROJECT}:jenkins
+
+# Set RoleBinding for the prod environment
+- apiVersion: v1
+  groupNames: null
+  kind: RoleBinding
+  metadata:
+    name: jenkins-is-admin
+    namespace: ${PROD_PROJECT}
+    labels:
+      template: openshift-tasks
+  roleRef:
+    name: admin
+  subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: ${BUILD_PROJECT}
+  userNames:
+  - system:serviceaccount:${BUILD_PROJECT}:jenkins
+
+##
+## Deploy to the PROD environment
+##
+
+# Blue Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: openshift-tasks-blue
+      color: blue
+      template: openshift-tasks
+    name: openshift-tasks-blue
+    namespace: ${PROD_PROJECT}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: openshift-tasks-blue
+      color: blue
+      deploymentconfig: openshift-tasks-blue
+    sessionAffinity: None
+    type: ClusterIP
+
+# Green Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: openshift-tasks-green
+      color: green
+      template: openshift-tasks
+    name: openshift-tasks-green
+    namespace: ${PROD_PROJECT}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: openshift-tasks-green
+      color: green
+      deploymentconfig: openshift-tasks-green
+    sessionAffinity: None
+    type: ClusterIP
+
+# Either blue or green Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${PROD_PROJECT}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      color: green
+    sessionAffinity: None
+    type: ClusterIP
+
+# The route for the "either blue or green" service
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      haproxy.router.openshift.io/balance: "roundrobin"
+      haproxy.router.openshift.io/disable_cookies: "true"
+    labels:
+      app: openshift-tasks
+      template: openshift-tasks
+    name: openshift-tasks
+    namespace: ${PROD_PROJECT}
+  spec:
+    host: ${PROD_ROUTE_HOSTNAME}
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: openshift-tasks
+      weight: 100
+    wildcardPolicy: None
+
+# The "blue" DeploymentConfig
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: openshift-tasks-blue
+      color: blue
+      template: openshift-tasks
+    name: openshift-tasks-blue
+    namespace: ${PROD_PROJECT}
+  spec:
+    replicas: 1
+    selector:
+      app: openshift-tasks-blue
+      color: blue
+      deploymentconfig: openshift-tasks-blue
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: openshift-tasks-blue
+          color: blue
+          deploymentconfig: openshift-tasks-blue
+          template: openshift-tasks
+      spec:
+        containers:
+        - image: openshift-tasks:ready-for-prod
+          imagePullPolicy: IfNotPresent
+          name: openshift-tasks-blue
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        containerNames:
+        - openshift-tasks-blue
+        from:
+          kind: ImageStreamTag
+          name: openshift-tasks:ready-for-prod
+          namespace: ${PROD_PROJECT}
+
+# The "green" DeploymentConfig
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: openshift-tasks-green
+      color: green
+      template: openshift-tasks
+    name: openshift-tasks-green
+    namespace: ${PROD_PROJECT}
+  spec:
+    replicas: 1
+    selector:
+      app: openshift-tasks-green
+      color: green
+      deploymentconfig: openshift-tasks-green
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: openshift-tasks-green
+          color: green
+          deploymentconfig: openshift-tasks-green
+          template: openshift-tasks
+      spec:
+        containers:
+        - image: openshift-tasks:ready-for-prod
+          imagePullPolicy: IfNotPresent
+          name: openshift-tasks-green
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        containerNames:
+        - openshift-tasks-green
+        from:
+          kind: ImageStreamTag
+          name: openshift-tasks:ready-for-prod
+          namespace: ${PROD_PROJECT}
+
+
+##
+## Template Parameters
+##
+parameters:
+- description: The name of the OpenShift Project to that holds the dev environment.
+  displayName: Development Environment
+  name: DEV_PROJECT
+  value: tasks-dev
+
+- description: The name of the OpenShift Project to that holds the build environment.
+  displayName: Build Environment
+  name: BUILD_PROJECT
+  value: tasks-build
+
+- description: The name of the OpenShift Project to that holds the test environment.
+  displayName: Test Environment
+  name: TEST_PROJECT
+  value: tasks-test
+
+- description: The name of the OpenShift Project to that holds the prod environment.
+  displayName: Production Environment
+  name: PROD_PROJECT
+  value: tasks-prod
+
+- description: The GIT repository to use.
+  displayName: GIT Repo URL
+  name: GIT_REPO
+  value:  https://github.com/nmasse-itix/openshift-tasks.git
+
+- description: The OpenShift Namespace where the JBoss EAP ImageStream resides.
+  displayName: JBoss EAP ImageStream Namespace
+  name: JBOSS_EAP_IMAGE_STREAM_NAMESPACE
+  value: openshift
+
+- description: Name of the ImageStreamTag to be used for the JBoss EAP image.
+  displayName: JBoss EAP ImageStreamTag
+  name: JBOSS_EAP_IMAGE_STREAM_TAG
+  value: jboss-eap70-openshift:latest
+
+- description: The route to create in the TEST environment and which we will use to run the integration tests
+  displayName: Application Hostname in the TEST environment
+  name: TEST_ROUTE_HOSTNAME
+  required: true
+
+- description: The route to create in the PROD environment
+  displayName: Application Hostname in the PROD environment
+  name: PROD_ROUTE_HOSTNAME
+  required: true

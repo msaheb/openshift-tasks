@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 @Path("demo")
 public class DemoResource {
-	
+
 	// application instance health
 	// 1 is healthy
 	private static Integer health = 1;
@@ -34,6 +34,13 @@ public class DemoResource {
         Logger log = Logger.getLogger(DemoResource.class.getName());
         log.log(Level.INFO, "INFO: Requested to generate load for " + seconds + " seconds.");
         return "{\"response\":\"" + response + "\"}";
+    }
+
+		@GET
+    @Path("get-pod-name")
+    @Produces({"application/json"})
+    public String generateLoad(@Context SecurityContext context) {
+				return new String("{\"podName\":\"" + System.getenv("HOSTNAME") + "\"}");
     }
 
     @GET
@@ -74,7 +81,7 @@ public class DemoResource {
     		health = 0;
     		Logger log = Logger.getLogger(DemoResource.class.getName());
             log.log(Level.SEVERE, "ERROR: I'm not feeling so well.");
-            return new String("{\"response\":\"The app is starting to look a little ill...\"}");	
+            return new String("{\"response\":\"The app is starting to look a little ill...\"}");
     	} else {
     		// become healthy
     		health = 1;
@@ -90,14 +97,14 @@ public class DemoResource {
     public void killSwitch(@Context SecurityContext context) throws IOException {
     	Logger log = Logger.getLogger(DemoResource.class.getName());
         log.log(Level.SEVERE, "ERROR: Going down NOW!");
-        Runtime.getRuntime().halt(255);       
+        Runtime.getRuntime().halt(255);
 	}
 
     @GET
     @Path("healthcheck/")
     @Produces({"application/json"})
     public Response checkHealth(@Context SecurityContext context) throws IOException {
-    	
+
     	String response = new String("{\"response\":\"Health Status: " + health + "\", \"health\": " + health + "}");
 
     	// if health is 1, return 200, otherwise 500
@@ -106,6 +113,6 @@ public class DemoResource {
     	} else {
     		return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(response).build();
     	}
-    	
+
     }
 }

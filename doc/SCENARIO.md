@@ -68,9 +68,9 @@ Main steps :
  - Once the new POD is ready, show with multiple `curl` that the two PODs are serving requests :
 
 ```
-$ curl http://route.to.test.app/demo/get-pod-name
+$ curl http://route.to.test.app/ws/demo/name
 {"podName":"openshift-tasks-2-2mcgb"}
 
-$ curl http://route.to.test.app/demo/get-pod-name
+$ curl http://route.to.test.app/ws/demo/name
 {"podName":"openshift-tasks-2-nsbv6"}
 ```

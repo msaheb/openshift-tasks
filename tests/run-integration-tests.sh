@@ -11,7 +11,7 @@ appurl="$1"
 function runtest() {
   url="$1"
   expected="$2"
-  ret="$(curl -s -o /dev/null -w "%{http_code}" "$url")"
+  ret="$(curl -s -o /dev/null -b cookies.txt -c cookies.txt -w "%{http_code}" "$url")"
   if [ "$ret" != "$expected" ]; then
     echo "$url: Got HTTP Status code '$ret' instead of a '$expected' Status code."
     exit 1

@@ -19,7 +19,8 @@ function runtest() {
 }
 
 runtest "$appurl/" 200
-runtest "$appurl/demo/get-pod-name" 200
+runtest "$appurl/ws/demo/name" 200
+runtest "$appurl/ws/demo/log/info" 200
 runtest "$appurl/blabla" 404
 
 echo "Successfully passed integration tests"

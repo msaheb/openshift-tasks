@@ -13,7 +13,7 @@
  *  - OPENSHIFT_TEST_ENVIRONMENT: The OpenShift project in which we will deploy the test version
  *  - OPENSHIFT_PROD_ENVIRONMENT: The OpenShift project in which we will deploy the prod version
  *  - OPENSHIFT_TEST_URL: The App URL in the test environment (to run the integration tests)
- *  - NEXUS_REPO_URL: The URL of your Nexus repository. Something like http://<nexushostname>/repository/openshift-tasks/
+ *  - NEXUS_REPO_URL: The URL of your Nexus repository. Something like http://<nexushostname>/repository/maven-snapshots/
  *  - NEXUS_MIRROR_URL: The URL of your Nexus public mirror. Something like http://<nexushostname>/repository/maven-all-public/
  *  - NEXUS_USER: A nexus user allowed to push your software. Usually 'admin'.
  *  - NEXUS_PASSWORD: The password of the nexus user. Usually 'admin123'.
@@ -58,7 +58,8 @@ node('maven') {
   // Extract version and other properties from the pom.xml
   def pom            = readMavenPom file: 'pom.xml'
   def packageName    = pom.name
-  def currentVersion = pom.version
+  def version        = pom.version
+  def newVersion     = "${version}-${BUILD_NUMBER}"
   def artifactId     = pom.artifactId
   def groupId        = pom.groupId
 

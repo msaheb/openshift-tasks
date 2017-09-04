@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Exit immediately if command returns non-zero status code
 set -e
 
@@ -11,9 +13,11 @@ appurl="$1"
 function runtest() {
   url="$1"
   expected="$2"
-  while ret="$(curl -s -o /dev/null -b cookies.txt -c cookies.txt -w "%{http_code}" "$url")" && [ "$ret" == "503" ]; do
-    echo "Got a 503. An OpenShift deployment may be pending ? Sleeping for a while and retrying..."
-    sleep 2
+  i=0
+  while [ "$i" -lt 10 ] && ret="$(curl -s -o /dev/null -b cookies.txt -c cookies.txt -w "%{http_code}" "$url")" && [ "$ret" != "$expected" ]; do
+    echo "$url: Got a '$ret' HTTP Status Code. An OpenShift deployment may be pending ? Sleeping for a while and retrying..."
+    sleep 10
+    let "i=i+1"
   done
   if [ "$ret" != "$expected" ]; then
     echo "$url: Got HTTP Status code '$ret' instead of a '$expected' Status code."

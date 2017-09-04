@@ -11,7 +11,10 @@ appurl="$1"
 function runtest() {
   url="$1"
   expected="$2"
-  ret="$(curl -s -o /dev/null -b cookies.txt -c cookies.txt -w "%{http_code}" "$url")"
+  while ret="$(curl -s -o /dev/null -b cookies.txt -c cookies.txt -w "%{http_code}" "$url")" && [ "$ret" == "503" ]; do
+    echo "Got a 503. An OpenShift deployment may be pending ? Sleeping for a while and retrying..."
+    sleep 2
+  done
   if [ "$ret" != "$expected" ]; then
     echo "$url: Got HTTP Status code '$ret' instead of a '$expected' Status code."
     exit 1

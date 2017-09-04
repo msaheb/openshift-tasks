@@ -37,9 +37,11 @@ public class DemoResource {
     }
 
 		@GET
-    @Path("get-pod-name")
+    @Path("name")
     @Produces({"application/json"})
     public String generateLoad(@Context SecurityContext context) {
+				Logger log = Logger.getLogger(DemoResource.class.getName());
+				log.log(Level.INFO, "INFO: Method 'get-pod-name' has been called !");
 				return new String("{\"podName\":\"" + System.getenv("HOSTNAME") + "\"}");
     }
 

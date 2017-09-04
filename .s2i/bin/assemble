@@ -22,4 +22,8 @@ if [ -z "$WAR_FILE_URL" ]; then
 fi
 
 echo "Deploying artifact found at $WAR_FILE_URL to $DEPLOY_DIR/$APP_NAME"
-curl --insecure -L -s -o $DEPLOY_DIR/$APP_NAME $WAR_FILE_URL
+ret=$(curl --insecure -L -s -o $DEPLOY_DIR/$APP_NAME -w "%{http_code}" $WAR_FILE_URL)
+if [ "$ret" != "200" ]; then
+  echo "Could not download WAR file. Got a $ret HTTP Status Code."
+  exit 1
+fi

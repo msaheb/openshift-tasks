@@ -19,13 +19,13 @@ Using this, you can exhibit :
 
 ```
 oc new-project tasks-dev
-oc new-app --name=tasks jboss-eap70-openshift~https://github.com/nmasse-itix/openshift-tasks.git
-oc expose service tasks
+oc new-app --name=openshift-tasks jboss-eap70-openshift~https://github.com/nmasse-itix/openshift-tasks.git
+oc expose service openshift-tasks
 ```
 
 To cleanup your environment, use :
 ```
-oc delete all -l app=tasks
+oc delete all -l app=openshift-tasks
 ```
 
 Then, once confident, you can setup a full CI/CD environment as described in the [Installation Guide](doc/INSTALL.md).

@@ -10,12 +10,11 @@ To run the following scenarios, you will have to modify the app to look differen
 Here is how to do so.
 
 Main steps :
- - TODO
- - You can find nice colors [here](https://www.w3schools.com/cssref/css_colors.asp)
+ - Open `src/main/webapp/index.jsp` and edit line 45 to add something to the title.
  - Run the following commands :
 
 ```
-git add XXX
+git add src/main/webapp/index.jsp
 git commit -m 'improve look and feel'
 git push
 ```

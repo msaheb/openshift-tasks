@@ -205,7 +205,6 @@ objects:
   metadata:
     annotations:
       haproxy.router.openshift.io/balance: "roundrobin"
-      haproxy.router.openshift.io/disable_cookies: "true"
     labels:
       app: openshift-tasks
       template: openshift-tasks
@@ -337,7 +336,6 @@ objects:
   metadata:
     annotations:
       haproxy.router.openshift.io/balance: "roundrobin"
-      haproxy.router.openshift.io/disable_cookies: "true"
     labels:
       app: openshift-tasks
       template: openshift-tasks

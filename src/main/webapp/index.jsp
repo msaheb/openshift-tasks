@@ -42,7 +42,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="/">
-          OpenShift Tasks Demo #2
+          OpenShift Tasks Demo #3
         </a>
       </div>
       <div class="collapse navbar-collapse navbar-collapse-1">

@@ -89,7 +89,7 @@ node('maven') {
     def WAR_FILE_URL = "${params.NEXUS_REPO_URL}/${warFileName}/${version}/${artifactId}-${version}.war"
     echo "Will use WAR at ${WAR_FILE_URL}"
 
-    // Trigger an OpenShift build in the dev environment
+    // Trigger an OpenShift build in the build environment
     openshiftBuild bldCfg: params.OPENSHIFT_BUILD_CONFIG, checkForTriggeredDeployments: 'false',
                    namespace: params.OPENSHIFT_BUILD_PROJECT, showBuildLogs: 'true',
                    verbose: 'false', waitTime: '', waitUnit: 'sec',

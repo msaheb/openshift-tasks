@@ -122,6 +122,14 @@ objects:
             value: ${PROD_PROJECT}
           - name: OPENSHIFT_TEST_URL
             value: http://${TEST_ROUTE_HOSTNAME}
+          - name: NEXUS_REPO_URL
+            value: ${NEXUS_REPO_URL}
+          - name: NEXUS_MIRROR_URL
+            value: ${NEXUS_MIRROR_URL}
+          - name: NEXUS_USER
+            value: ${NEXUS_USER}
+          - name: NEXUS_PASSWORD
+            value: ${NEXUS_PASSWORD}
 
 ##
 ## Deploy to the TEST environment
@@ -508,3 +516,23 @@ parameters:
   displayName: Application Hostname in the PROD environment
   name: PROD_ROUTE_HOSTNAME
   required: true
+
+- description: The Nexus repository that will store the software binaries
+  displayName: Nexus Repo URL
+  name: NEXUS_REPO_URL
+  value: http://nexus.tasks-build.svc.cluster.local:8081/repository/openshift-tasks/
+
+- description: The Nexus Repository URL for maven mirroring
+  displayName: Nexus Mirror URL
+  name: NEXUS_MIRROR_URL
+  value: http://nexus.tasks-build.svc.cluster.local:8081/repository/maven-all-public/
+
+- description: The Nexus User used to push the software to Nexus
+  displayName: Nexus Username
+  name: NEXUS_USER
+  value: admin
+
+- description: The password of the Nexus User used to push the software to Nexus
+  displayName: Nexus Password
+  name: NEXUS_PASSWORD
+  value: admin123

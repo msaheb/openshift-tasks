@@ -13,7 +13,8 @@
 # Exit immediately if command returns non-zero status code
 set -e
 
-DEPLOY_DIR=$JBOSS_HOME/standalone/deployments
+# TODO
+DEPLOY_DIR=$WILDFLY_HOME/standalone/deployments
 APP_NAME=ROOT.war
 
 if [ -z "$WAR_FILE_URL" ]; then

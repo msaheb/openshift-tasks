@@ -86,7 +86,7 @@ node('maven') {
     // Determine the war filename that we need to use later in the process
     String warFileName = "${groupId}.${artifactId}"
     warFileName = warFileName.replace('.', '/')
-    def WAR_FILE_URL = "${params.NEXUS_REPO_URL}${warFileName}/${version}/${artifactId}-${version}.war"
+    def WAR_FILE_URL = "${params.NEXUS_REPO_URL}/${warFileName}/${version}/${artifactId}-${version}.war"
     echo "Will use WAR at ${WAR_FILE_URL}"
 
     // Trigger an OpenShift build in the build environment
